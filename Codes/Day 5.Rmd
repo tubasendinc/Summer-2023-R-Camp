@@ -1,0 +1,174 @@
+---
+title: "R Workshop Day 5: Troubleshooting and Some Common Problems"
+author: "Tuba Sendinc"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_notebook:
+    number_sections: true
+---
+
+
+# Unmatched parantheses, curly braces, square brackets, or quotes
+
+This is a very common error type. 
+
+```{r}
+## missing a closing parenthesis:
+mean(c(1, 7, 13)
+mean(c(1, 7, 13)) #corrected
+
+## missing a curly brace before "else":
+x <- 7 
+if(x > 10) {
+  print("x > 10")
+   else {
+  print("x <= 10")
+ }
+
+#corrected:
+if(x > 10) {
+  print("x > 10")
+ } else {
+  print("x <= 10")
+   }
+  
+## missing a square bracket:
+summary(ggplot2::diamonds[, "price")
+summary(ggplot2::diamonds[, "price"] #corrected
+
+## missing a closing quote in 2nd element:
+group <- c("Group 1", "Group 2) 
+group
+group <- c("Group 1", "Group 2")  #corrected
+
+```
+
+If you are using RStudio, these types of mistakes are less likely because RStudio automatically write a full parenthesis, curly brace, square bracket or quotation mark when you open one.
+
+# Not installing or loading a function
+
+```{r}
+## install package:
+install.packages("ggplot2") #when installing a package, package name should be in quotation marks
+
+## load package:
+library(ggplot2) # when loading a package, package name should not be in quotation marks
+```
+
+# Typos 
+
+```{r}
+# typo in function name:
+maen(c(1, 7, 13))
+
+# corrected:
+mean(c(1, 7, 13))
+
+# typo in variable name:
+summary(ggplot2::diamonds[, "detph"])
+
+#corrected:
+summary(ggplot2::diamonds[, "depth"])
+
+# typo in dataset name:
+data <- data.frame(
+  x = rnorm(10),
+  y = rnorm(10)
+)
+summary(dta[, 2])
+
+#corrected:
+summary(data[, 2])
+
+# typo in object name:
+test <- c(1, 7, 13)
+mean(tset)
+
+#corrected:
+mean(test)
+
+# typo in package name:
+library("tydiverse")
+
+#corrected:
+library("tidyverse")
+```
+
+# Using inappropriate analysis for different data types 
+
+Knowing our data type is very important because it dictates what we can do with our data. 
+
+You cannot compute the mean of a character or factor vector.
+```{r}
+gender <- factor(c("female", "female", "male", "female", "male"))
+
+mean(gender) #does not work
+```
+
+Instead, we should tabulate a character vector:
+```{r}
+table(gender) #3 females, 2 males!
+
+prop.table(table(gender)) #this is how we look at proportions of each cell!
+
+barplot(table(gender)) #this is how we visually display the distribution!
+```
+
+Mostly, it is not useful to create a barplot of a quantitative continuous vector, because frequency for each value will be mostly 1 and we cannot learn much about our data.
+```{r}
+barplot(table(rnorm(100)))
+```
+
+Instead, we can look at the summary statistics!
+```{r}
+x <- rnorm(100)
+summary(x)
+```
+
+Or, we can draw a histogram or a box plot!
+```{r}
+par(mfrow = c(1, 2)) #combine two plots
+hist(x)
+boxplot(x)
+```
+
+# Not setting the correct working directory!!!
+
+We should always know which folder is used as our working directory. getwd() function helps us with that. I recommend creating a separate folder for each assignment, and setting a separate working directory in each R script as to avoid these problems.
+```{r}
+getwd() #finding out the working directory
+```
+
+## How to Google "R Stuff"
+
+Finding solutions for coding related problems can be challenging in the beginning. R's name also makes this challenging because it is a simple letter and it makes a google search harder. 
+
+# Use quotation marks in Google search
+
+When you are searching for a solution, try to add "in R" expression to your search. By doing this, you are more likely to get results relevant to your search. 
+For instance, instead of searching for the following:
+
+How to replace a character string r
+
+Search for the following:
+How to replace a character string "in R"
+
+# Use package names in your Google search
+
+When your problem involves a package, try to add it in your Google search, as it increases your chances of finding relevant results.
+
+For instance, 
+
+How to add axes labels in ggplot
+
+Even better:
+
+How to add axes labels "in ggplot"
+
+# When you cannot find an answer...
+
+Sometimes we run into issues that have nothing to do with our code. When this happens, turning R off and on can help! Save the information you need to save, and turn it off. Then turn it on again, clean your global environment, and make a fresh start.
+
+
+
+

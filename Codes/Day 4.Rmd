@@ -1,0 +1,327 @@
+---
+title: "R Workshop Day 4: Simulations"
+author: "Tuba Sendinc"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_notebook:
+    number_sections: true
+---
+
+
+# Control structures
+Control structures are what allow you to control the execution of your code. Most of them are conceptually fairly intuitive, but they can get a bit complicated in practice. 
+
+Commonly used control structures are:
+
+**if and else:** testing a condition and acting on it
+
+**for:** execute a loop a fixed number of times
+
+**while:** execute a loop while a condition is true
+
+**repeat:** execute an infinite loop (must break out of it to stop)
+
+**break:** break the execution of a loop
+
+**next:** skip an iteration of a loop
+
+There is a lot to say about control structures in R. Some of what we will do here is generally considered bad practice. However, we will ignore that for now because our focus is on developing an intuition about how control structures work and some of the bad practices are more explicit in how they are expressed. Once you're comfortable with control structures, I recommend this reading for best practices: https://rstudio-education.github.io/hopr/speed.html
+
+Let's see how if/else structure works
+```{r}
+x <- runif(1, 0, 10) # generate a uniform random number
+print(x)
+
+if(x > 5) {
+        y <- 10
+} else {
+        y <- 0
+} # generate an object named y which takes on the value of 10 if x is greater than 5 and takes on the value of 0 if else
+print(y)
+```
+
+This is how "for loops" work:
+```{r}
+for(i in 1:10) {
++         print(i)}
+```
+
+Now we delve into a slightly more complicated example. Let's say we have a vector of 20 random numbers, and we want to take the absolute value of each. How do we do this?
+
+```{r}
+vec <- rnorm(20)
+
+# The correct answer is to remember that R's functions are vectorized
+abs(vec)
+
+# But let's do it with a for loop for demonstration's sake. 
+```
+
+When tackling such problems, it's often good to start with simple tasks and build out rather than to write the whole thing at once. So how do we take the absolute value of a single number in our vector?
+
+```{r}
+abs(vec[1])
+```
+
+Now let's put this in a loop
+```{r}
+# Let's dissect what's going on here
+for(i in 1:length(vec)){
+  abs(vec[i])
+}
+
+# If we think back to our operators, remember that : creates a sequence between two numbers. So we are creating a sequence between 1 and however many numbers are in our vector. We could just use 1:20, but by using length(vec) the length of our sequence automatically changes with the length of our vector.
+1:length(vec)
+
+# What is i? i is a variables that will iteratively assume each value in the sequence. So i will take the value of the first number in the sequence, go through the loop and plug in its value anywhere an i is present, and then take the value of the next number in the sequence and repeat.
+# For example:
+for(i in 1:10){
+  print(i + i)
+}
+
+# Lets try running our loop and checking the result
+# run the loop
+for(i in 1:length(vec)){
+  abs(vec[i])
+}
+# check the result
+vec
+```
+* Why didn't this loop work?
+
+```{r}
+# we calculated the absolute value, but we didn't store the result
+for(i in 1:length(vec)){
+  vec[i] <- abs(vec[i])
+}
+vec
+```
+Now our loop works, but it seems inefficient. We don't need the absolute value of all numbers, only negative numbers. Let's introduce some control statements.
+
+```{r}
+# Let's start by creating a toy example. We'll set our variable i so that we can manipulate it
+i <- 0
+# and then we'll create a control structure that gives us explicit feedback so we know if it behaves as expected.
+if(i < 0){
+  print('negative')
+} else if(i > 0){
+  print('positive')
+} else{
+  print('non-negative')
+}
+
+# After we have confirmed that the control structure works, we can replace our toy functions with our desired functions
+if(i < 0){
+  vec[i] <- vec[i] * -1
+} else if(i > 0){
+  next # exits the current iteration and moves to the next one
+} else{
+  next
+}
+
+# In practice, we can simplify this to a single if statement since the other controls don't do anything
+if(i < 0){
+  vec[i] <- vec[i] * -1
+}
+
+# now we can insert this control structure into our for loop and try the whole thing again
+vec <- rnorm(20)
+
+for(i in 1:length(vec)){
+  if(i < 0){
+  vec[i] <- vec[i] * -1
+  }
+}
+
+vec
+
+```
+* Why did this loop fail?
+
+```{r}
+# Because our control structure is checking if i is negative, not if the ith element of our vector is negative
+for(i in 1:length(vec)){
+  if(vec[i] < 0){
+  vec[i] <- vec[i] * -1
+  }
+}
+```
+
+Again, this example is designed to give you an intuition for how control structures work. For best practices in iterating through data, use vectorized functions and the **apply()** family of functions. You will probably also find the **ifelse()** function useful.
+
+Here is what a vectorized version of our loop would look like.
+```{r}
+# instatiate the vector
+vec <- rnorm(20)
+# get absolute value of negative numbers
+vec[vec < 0] <- vec[vec < 0] * -1
+# check results
+vec
+```
+
+And again with the ifelse() function: 
+```{r}
+vec <- rnorm(20)
+ifelse(vec < 0, vec * -1, vec)
+```
+The vectorized version is quicker because it applies our operation to all negative elements in our vector at once, rather than doing it one at a time. In practice, don't worry too much about efficiency until you get to the point that your code is taking hours to run. Worry more about just getting things working when you're learning a language.
+
+# User defined functions
+Functions help us repeat a series of operations quickly with a single command. Often, we will have some specific series of operations we want to repeat but there are no R functions to do this. In such cases, we can define our own functions!
+
+```{r}
+# Here is a simple example
+plus10 <- function(x) {
+  x + 10
+}
+plus10(10)
+
+# Functions can have multiple arguments
+plusy <- function(x, y){
+  x + y
+}
+plusy(10, -5)
+
+# And you can set the default value for arguments
+plusy <- function(x, y = 1){
+  x + y
+}
+plusy(10)
+
+# Functions can also contain loops or control structures
+abs.vec <- function(vec){ 
+  # Insert the absolute value loop we created above
+  for(i in 1:length(vec)){ 
+    if(vec[i] < 0){
+      vec[i] <- vec[i] * -1
+    }
+  }
+}
+
+vec <- rnorm(20)
+abs.vec(vec)
+vec
+```
+* Why didn't this function work?
+
+Things within a function are called the local environment. Changes in the **local environment** do not affect the **global environment.** So when we changed the vec object in the function, we changed the local vec. When we called the vec object outside of the function, we called the global vec. If we want local changes to persist in the global environment, we need to return the local object and store it.
+
+```{r}
+abs.vec <- function(vec){ 
+  for(i in 1:length(vec)){ 
+    if(vec[i] < 0){
+      vec[i] <- vec[i] * -1
+    }
+  }
+  # You can also just put vec here, without the return function.
+  return(vec)
+}
+
+vec <- rnorm(20)
+abs.vec(vec)
+vec
+```
+
+
+# The Monty Hall problem
+
+You are on a game show and are presented with three doors. Behind two are goats, and behind one is a car. Assume you want the car. You pick a door, and once you have Monty Hall opens one of the other two doors to reveal a goat. He then gives you a choice, do you want to change your selected door, or keep your initial selection? What is the best choice?
+
+Here are some functions and operators that might be useful:
+```{r}
+# sample()
+# %in%
+# !
+# ifelse()
+# replicate()
+```
+
+Let's first break down the process:
+1. A car is randomly assigned to a door
+2. A contestant randomly chooses a door
+3. Monty opens a door that does not have a car
+4. A contestant randomly chooses to switch or stay
+
+
+```{r}
+# Let's start by defining our decision space, which is three doors
+ds <- 1:3
+# Next we randomly place a car somewhere in the decision space
+car <- sample(ds, 1)
+# Then we randomly assign the contestant choice
+choice <- sample(ds, 1)
+
+# Now we have a more complicated challenge. Monty will always open a door that was not chosen by the contestant, and does not have a car. So let's define Monty's decision space. If the contestant did not choose the car, there is only one door monty can choose. If the contestant did choose the car, monty can choose between two doors. So we have to define monty's decision space relative to the contestant choice and the location of the car.
+# We can use a boolean mask to do this. Which doors in the decision space are in the set containing the car and the contestant choice.
+#ds %in% c(car, choice)
+# We want the doors that aren't in the set containing the car and contestant choice, so we negate the boolean mask
+mask <- !(ds %in% c(car, choice))
+# And then we can use this to subset our vector and define monty's decision space
+montyds <- ds[mask]
+
+if(length(montyds) > 1){
+  monty <- sample(montyds, 1)
+} else {
+  monty <- montyds
+}
+# Now the contestant has a new decision space and a new choice. First let's define the decision space, and door not chosen by Monty
+ds2 <- ds[-monty]
+# and lets define if the contestant will switch or not
+switch <- TRUE
+# Now we need to define what will happen if the contestant switches. If they do switch, they will select the door from the decision space that is not equal to their initial choice
+if(switch == TRUE){
+  choice <- ds2[ds2 != choice]
+}
+# As a final step, let's define what happens if they win. Let's just return 1 if they win, zero otherwise
+if(car == choice){
+  print("WINNER!")
+} else{
+  print(":(")
+}
+```
+
+We now have a complete Monty Hall simulation. Let's put it in a function.
+```{r}
+monty.hall <- function(switch = TRUE){
+  # Phase 1, contestant selects a door
+  ds <- 1:3
+  car <- sample(ds, 1)
+  choice <- sample(ds, 1)
+  # Phase 2, Monty opens a door
+  mask <- !(ds %in% c(car, choice))
+  montyds <- ds[mask]
+  if(length(montyds) > 1){
+    monty <- sample(montyds, 1)
+  } else {
+    monty <- montyds
+  }
+  # Phase 3, contestant chooses to switch or stay
+  ds2 <- ds[-monty]
+  if(switch == TRUE){
+  choice <- ds2[ds2 != choice]
+  }
+  # Phase 4, Winner decided
+  if(car == choice){
+    return(1)
+  } else{
+    return(0)
+  }
+}
+```
+
+Now that we have our function, we can replicate it many times to get our result
+```{r}
+monty.hall(switch = TRUE)
+
+switching <- replicate(1000, monty.hall(switch = TRUE))
+swres <- sum(switching)
+
+staying <- replicate(1000, monty.hall(switch = FALSE))
+stres <- sum(staying)
+
+barplot(c(swres, stres), 
+        names.arg = c('Switching', 'Staying'), 
+        ylab = 'Wins',
+        main = 'Monty Hall Simulations')
+```
+

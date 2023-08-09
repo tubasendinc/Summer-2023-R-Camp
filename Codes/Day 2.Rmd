@@ -1,0 +1,252 @@
+---
+title: "R Workshop Day 2: Data Manipulation"
+author: "Tuba Sendinc"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  html_notebook:
+    number_sections: true
+---
+# R packages
+
+R packages serve as add-ons to the R programming language, extending its capabilities. These packages consist of reusable and reproducible pieces of code that have been written and tested by the broader R community. In order to leverage these packages, they need to be initially installed using the "install.packages()" function. Subsequently, when you intend to use them, they must be imported into your current working environment via the "library()" function.
+
+When your script relies on a package, it forms a dependency, indicating that your script hinges on another script being executed first for proper functioning. To enhance code reliability, it's advisable to minimize dependencies, as this reduces the potential for errors.
+
+Here are some helpful guidelines:
+
+Adding Packages as Needed: Incorporate packages into your code as you use them for specific tasks.
+Removing Unused Packages: Remove packages that are no longer necessary, keeping your environment clean.
+Keeping Package Imports at the Top: Place all package imports at the beginning of your script to maintain code clarity and organization.
+
+Following these practices ensures an efficient and well-structured coding process.
+  
+```{r}
+install.packages('dplyr') # installing a package
+library(dplyr) # importing a package
+
+install.packages(c("dplyr", "tidyr")) # installing multiple packages with one syntax
+```
+
+# Working Directories
+
+A working directory is a file path on your computer that sets the default location of any files you read into R, or save out of R. setwd() is the function we use to specify the working directory. 
+
+In Windows:
+setwd("C:/Users/User Name/Documents/FOLDER")
+
+In Macs:
+setwd("/Users/User Name/Documents/FOLDER") 
+
+In this example, the working directory has been set to a folder, FOLDER, within the Documents directory. You have to type in, or copy and paste the appropriate pathway on your computer.
+
+You can check that your working directory has been correctly set by
+using the function, getwd().
+
+```{r}
+getwd()
+```
+
+# Importing Data
+
+Datasets are typically kept in straightforward files, with the most prevalent format being **CSV** (comma-separated values), which arranges data into a **tabular** structure. Additionally, you'll encounter various other formats like **TSV** (tab-separated values), **XLS** and **XLSX** (Excel), **DTA** (STATA), **SAV** (SPSS), and **RData** (R). Generally, it's advisable to lean towards using CSV as your default choice. However, it's important to exercise caution when using Excel to open data, as it might automatically attempt to format data, leading to alterations in dates or loss of precision.
+
+Apart from these, you might encounter more complex data structures like hierarchical files such as JSON, as well as database management systems (DBMS) such as SQL databases. While we won't delve into these topics at the moment, it's valuable to know that R offers packages and tools designed to manage data that doesn't conform to the traditional tabular structure.
+
+```{r}
+# Let's try reading in some data
+df <- read.csv('justice_results.tab')
+# Why did this fail?
+# It used the wrong delimiter 
+df2 <- read.csv('justice_results.tab', sep = '\t')
+
+# Let's try converting the file to a csv.
+write.csv(df, 'justice_results.csv')
+# now lets read the file in again
+df3 <- read.csv('justice_results.csv')
+
+# What changed and why?
+# There is an exta column the row name were written when we saved the file as a .csv
+# let's write the file without the row names
+write.csv(df, 'justice_results.csv', row.names = FALSE)
+
+df[c('docketId', 'petitioner_vote', 'justiceName', 'lagged_ideology', 'term', 'conservative_lc')]
+
+length(unique(paste(df$docketId, df$justice)))
+
+```
+
+# Working With Data Frames
+
+## Exploring Data
+Several valuable functions for effectively examining data frames:
+
+```{r}
+dim(df)
+nrow(df)
+ncol(df)
+head(df)
+tail(df)
+colnames(df)
+summary(df)
+str(df)
+```
+
+* What variables are in the data?
+* What data types does the data set contain?
+* In what context might you use these functions outside of data exploration?
+
+```{r}
+# to access a single column in the data frame
+df$justiceName
+
+# missing values
+df[complete.cases(df),]
+df[!complete.cases(df),]
+```
+
+## Subsetting and Dataframe Manipulation
+
+Subsetting involves the retrieval of specific elements within a dataframe, serving either to extract data for reference purposes or to allocate it to another variable. The fundamental technique for subsetting in R is performed through the **df[row, column]** approach. In this context, "df" signifies the dataframe object, and "row" and "column" denote the names or index numbers pertaining to the desired row and column. 
+
+```{r}
+# Return the value in the first row and first column
+df[1,1]
+# Leaving one of the values blank returns all values
+# return all rows for the first column
+df[,1]
+# return all columns for the first row
+df[1,]
+# You can also pass column names
+df[,'justiceName']
+```
+
+What is the name and ideology of the 50th justice to appear in the dataset?
+```{r}
+df[50, c('justiceName', 'lagged_ideology')]
+```
+
+Another way to access columns is with the **$** operator.
+```{r}
+df$justiceName
+```
+* What is the data type and structure of df['justiceName'] and df$justiceName?
+
+* What does this imply?
+
+What does the following return?
+```{r}
+df$lagged_ideology >= 0
+```
+* What is the data type and structure?
+
+```{r}
+typeof(df$lagged_ideology >= 0)
+```
+
+This is a very powerful tool for subsetting your data. You might hear this referred to as a **boolean mask**. 
+```{r}
+# return the name and ideology of justices with an ideology greater than 0
+df[df$lagged_ideology > 0, c('justiceName', 'lagged_ideology')]
+```
+
+* Get a subset of all rows for justice Thurgood Marshall
+```{r}
+df[df$justiceName == 'TMarshall',]
+```
+
+There are multiple other ways to subset data frames, including the subset function and other functions in the dplyr package.
+```{r}
+subset(df, justiceName == 'TMarshall')
+```
+
+Initially, these approaches might appear more attractive due to their perceived simplicity and clarity. As a general guideline, it's advisable to primarily utilize the **[]** and **\$** notations. The subset method involves certain internal processes that could potentially result in unintended outcomes such as discarding NA values or triggering errors. Conversely, the **[]** and **\$** notations are more straightforward and do not introduce any additional dependencies, making them preferable choices.
+
+Let's create two separate data frames: one with justice and case characteristics, and one with vocal and speech variables.
+```{r}
+justs <- df[,c('docketId', 'justiceName', 'lagged_ideology', 'term')]
+cases <- df[,c('docketId', 'justiceName', 'petitioner_vote', 'pitch_diff', 'conservative_lc')]
+```
+
+Let's say you want to re-scale the ideology variable so that it has a minimum value of zero. How do we do this?
+
+```{r}
+# get the minimum value
+min(justs$lagged_ideology)
+# this returns NA, why?
+# NA represents unknown values. Functions will often have an argument for dealing with missing values.
+min.ideal <- min(justs$lagged_ideology, na.rm = T) # ignore NA values
+
+justs$cons <- justs$lagged_ideology + abs(min.ideal)
+```
+
+Handling missing values is a frequently encountered task in data management. There are two valuable functions at your disposal: is.na() and complete.cases(). These functions can be effectively employed as boolean masks to sift through data, either to exclude missing data or to pinpoint its locations within the dataset.
+
+Some of their practical applications:
+
+1. Identifying Missing Data Locations: These functions can assist in answering the question of where missing data is present within the dataset.
+2. Removing Rows with Missing Values: By utilizing these functions, you can facilitate the process of eliminating rows that contain any missing values.
+3. Quantifying Missing Data: You can also use these functions to determine the count of rows that lack values in the "lagged_ideology" variable.
+
+```{r}
+is.na(justs) # returns true if a value is missing
+complete.cases(justs) # returns true if there are no missing values
+
+justs[!complete.cases(justs),] # return rows that have missing data
+justs[complete.cases(justs),] # drop rows with missing data
+sum(is.na(justs$lagged_ideology)) # count rows missing lagged ideology
+```
+
+Another common task is some form of aggregation. Let's say we want to know the average ideology for each justice. We can do this with the aggregate function.
+
+```{r}
+?aggregate
+ideal <- aggregate(justs$lagged_ideology, list(justs$justiceName), FUN = mean, na.rm = TRUE)
+colnames(ideal) <- c('justiceName', 'avg_ideology')
+```
+
+Data frames offer a plethora of avenues for manipulation, although our objective is not to comprehensively delve into all of them in this workshop For basic tasks such as sub-setting or generating new variables, it's advisable to employ base R functions. On the other hand, when confronted with more complex tasks like pivoting, melting, and the like, employing base R methods might become somewhat challenging. In these instances, dplyr and tidyr packages provide streamlined solutions. For further guidance and insights, refer to the Data Wrangling cheat sheet.
+
+## Merging Datasets
+
+Merging datasets is a common task. To merge datasets, we have to know:
+
+1. What is the unit of analysis in our dataset? Is it country, is it country-year, country-rebel, country-rebel-year, or individual?
+
+2. Are there any duplicates in the datasets we want to merge? If so, why are there duplicates? When should we remove duplicate observations, when should we keep them?
+
+3. Is there a variable that uniquely identifies observations? 
+
+First, let's look at the documentation for R's merge() function:
+
+```{r}
+?merge()
+```
+
+Let's say we want to merge our cases and ideology data so that each row in cases also has the justice's average ideology. How do we do this with the merge function?
+
+```{r}
+merged_data <- merge(cases, ideal, by = 'justiceName', all.x = T)
+```
+
+Now lets join our case data with our justice data
+```{r}
+merged_data2 <- merge(cases, justs, by = c('justiceName'), all.x = T)
+```
+
+* What happened here and why?
+* How do we fix it?
+
+When merging data make sure you merge on a common **unique** identifier for each row. In this instance, we can accomplish this by joining on both the justiceName and docketId columns.
+
+```{r}
+merged_data3 <- merge(cases, justs, by = c('justiceName', 'docketId'), all.x = T)
+```
+
+**Always validate your merge results!**
+
+The left join is the most commonly used merge and I recommend using it as the default whenever practical. Spotting failures can be tricky sometimes because we cannot manually inspect every row in the data. Using left joins as a standard goes a long way in setting expectations and helping to spot join failures. When doing a left join, the number of rows in the merged data frame should equal the number of rows in the left hand dataframe. Using left joins and keeping an eye on the number of rows will catch half of all join failures. 
+
+* Observations in the left hand table should be unique, and contain all observations you wish to use in the final analysis.
+* If new rows are created after the join, that means the join ID is not unique. This could be because you need a better join ID or because there are duplicate observations in the right hand table.
+* Joins can also introduce missing values where you don't expect them. When using a left join, this usually indicates the right hand data set does not have observations that are present in the left hand data set. 
+* Columns you join on must be of the same data type!

@@ -1,0 +1,183 @@
+---
+title: "R Workshop Day 3: Data Visualization and Working with Objects"
+author: "Tuba Sendinc"
+date: "`r format(Sys.time(), '%d %B, %Y')`" 
+output: 
+  html_notebook:
+    number_sections: true
+#output: pdf_document
+---
+```{r}
+library(stargazer)
+library(ggplot2)
+```
+
+
+Before delving into our data analysis today, let's review a set of summary statistics that we often refer to in order to understand our data better:
+
+```{r}
+set.seed(1)
+random_vector <- rnorm(10) # create a random vector with normal distribution
+
+mean(random_vector) # mean 
+median(random_vector) # median
+var(random_vector)  # sample variance
+sd(random_vector) # sample standard deviation
+max(random_vector) # maximum
+min(random_vector) #minimum
+summary(random_vector) # summary statistics
+table(random_vector) # frequency distribution
+cumsum(random_vector) # cumulative sum
+```
+
+Now, let's turn to actual data!
+```{r}
+setwd("/Users/tuba/Dropbox/R Workshop") # setting the working directory
+df <- read.csv('justice_results.csv') # importing the dataset into R
+df <- df[complete.cases(df),] # only keeping observations with no missing values
+```
+
+# Tables
+
+You should aim to create professional-looking and publication-ready tables for your assignments and research papers. The stargazer package offers the most effective solution for achieving this goal. It interfaces with model objects, boasts user-friendly functionality, and can generate outcomes in various formats.
+
+You'll want to make presentable and well formatted tables for your homework and papers. The stargazer package is the best way to accomplish this. It works with model objects, is easy to use, and can output results in multiple formats.
+
+```{r}
+?stargazer
+library(stargazer)
+stargazer(df, type='text') # summary statistics table for the entire dataset in text format
+stargazer(df) # the latex format is the default
+```
+
+If you want latex output, just change the type argument and copy+paste the latex output. If you want a nice table in an R markdown notebook, you can output an HTML table and paste that in the body of the notebook.
+
+# Plots
+## Basic plots
+
+R comes with a lot of built in plotting functions
+```{r}
+# plots are also objects that can be stored and manipulated
+id.hist <- hist(df$lagged_ideology)
+plot(id.hist)
+
+# Usally you will just call the function with the desired arguments
+hist(df$lagged_ideology, xlab = 'Ideology', main = 'Distribution of SC Justice Ideology')
+```
+
+## ggplot2
+You can do a lot with base R, but generally you will rely on the ggplot2 package for publication quality plots.
+
+The basic idea behind ggplot2 is that graphics are built from layered "grammatical elements." You do not need to memorize these layers, but understanding this concept of building graphics via layered elements will help you understand how ggplot2 works. 
+
+Data, aesthetics, and geometries are the three most basic layers you need to understand.
+
+Aesthetics:
+* Axis
+* color, fill
+* size
+* opacity (alpha)
+* shape
+* line type
+
+Geometries:
+* points
+* lines
+* bars
+* histogram
+* boxplot
+* etc.
+
+
+```{r}
+# Scatter Plots
+qplot(lagged_ideology, petitioner_count, data=df) #qplot function comes from ggplot2 package
+
+qplot(lagged_ideology, petitioner_count, data=df,
+main="Scatter Plot of Lagged Ideology vs. Petitioner Count") # adding a main title to the graph
+
+qplot(lagged_ideology, petitioner_count, data=df,
+main="Scatter Plot of Lagged Ideology vs. Petitioner Count",
+xlab="Lagged Ideology", ylab="Petitioner Count") # properly labeling the x and y axes
+```
+
+Let's see how this works with a basic plot. We'll start with each element and add to it iteratively.
+```{r}
+# First add the data to the object
+gg1 <- ggplot(df)
+gg1
+
+# then define how we want to map data on to the plot
+gg1 <- gg1 + aes(x=petitioner_count)
+gg1
+
+# Finally we define the geometry we want the plot to take
+gg1 <- gg1 + geom_bar()
+gg1
+
+# Now let's say we want to change the plot to a histogram, so we add the geom_histogram to our plot. What went wrong here?
+gg1 <- gg1 + geom_histogram()
+gg1
+
+# The gg1 object already had a geom layer, and we added another one on top of it rather than replacing it.
+```
+
+This is the basic idea, let's do a more complicated example.
+
+```{r}
+# Let's start with a basic plot
+ggplot(df) +
+  aes(petitioner_pitch, respondent_pitch, color = as.factor(petitioner_vote)) +
+  geom_point(shape = 20)
+```
+
+```{r}
+# Now lets add a best fitting line
+ggplot(df) +
+  aes(petitioner_pitch, respondent_pitch, color = as.factor(petitioner_vote)) +
+  geom_point(shape = 20) +
+  geom_smooth()
+
+# This created two best fitting lines. Why?
+# How can we make it so we only get one best fitting line?
+
+```
+
+```{r}
+# Let's change the colors so they are more colorblind friendly
+# search for ggplot2 color palettes online for color hexcodes
+ggplot(df) +
+  aes(petitioner_pitch, respondent_pitch) +
+  geom_point(shape = 19,  aes(color = as.factor(petitioner_vote))) +
+  geom_smooth(color = 'black') +
+  scale_color_manual(values = c('#0072b2', '#D55E00'))
+```
+```{r}
+# Now lets add some labels
+ggplot(df) +
+  aes(petitioner_pitch, respondent_pitch) +
+  geom_point(shape = 19,  aes(color = as.factor(petitioner_vote))) +
+  geom_smooth(color = 'black') +
+  scale_color_manual("Petitioner Vote", values = c('#0072b2', '#D55E00'), labels = c('For', 'Against')) +
+  xlab('Petitioner Pitch') +
+  ylab('Respondent Pitch') +
+  ggtitle('Justice Pitch by Target',)
+```
+
+```{r}
+# Finally, let's adjust the theme for a cleaner presentation
+gg1 <- ggplot(df) +
+  aes(petitioner_pitch, respondent_pitch) +
+  geom_point(shape = 19,  aes(color = as.factor(petitioner_vote))) +
+  geom_smooth(color = 'black') +
+  scale_color_manual("Petitioner Vote", values = c('#0072b2', '#D55E00'), labels = c('For', 'Against')) +
+  xlab('Petitioner Pitch') +
+  ylab('Respondent Pitch') +
+  ggtitle('Justice Pitch by Target',) +
+  theme_classic() +
+  theme(plot.title = element_text(hjust = 0.5)) 
+plot(gg1)
+# and save the plot
+ggsave('images/pitch.png', width = 8, height = 5, dpi = 300)
+```
+
